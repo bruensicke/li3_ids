@@ -2,7 +2,7 @@
 
 Lithium library for Intrusion Detection [PHPIDS](http://phpids.org/).
 
-PHPIDS Spec version: `1.4.6`
+PHPIDS Spec version: `0.5.6`
 
 ## Installation
 
