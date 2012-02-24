@@ -14,12 +14,6 @@ and activate it in you app (config/bootstrap/libraries.php), of course:
 
 	Libraries::add('li3_ids');
 
-Also, make sure, that you give write access to the ids tmp path. which is
-
-	chmod -R 0777 li3_ids/libraries/phpids/lib/IDS/tmp
-
-In upcoming releases we try to write directly to `app/resources/tmp`
-
 ## Usage
 
 To have a look at what is going on, have a look into your `logs` folder
