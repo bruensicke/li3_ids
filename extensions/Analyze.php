@@ -83,7 +83,7 @@ class Analyze extends \lithium\core\Adaptable {
 	 * @param object $result \IDS_Report
 	 * @return	void
 	 */
-	protected static function react(\IDS_Report $result){
+	protected static function react(\IDS_Report $result) {
 
 		$current_impact = $result->getImpact();
 		$config = self::config('default');
@@ -127,7 +127,7 @@ class Analyze extends \lithium\core\Adaptable {
 	 * @param integer $totalImpact
 	 * @return boolean
 	 */
-	protected static function log(\IDS_Report $result, $threshold, $total_impact){
+	protected static function log(\IDS_Report $result, $threshold, $total_impact) {
 		$request = self::$_requestInstance;
 		$params = compact('result', 'threshold', 'total_impact', 'request');
 
@@ -173,7 +173,6 @@ class Analyze extends \lithium\core\Adaptable {
 		);
 		return (array) $config + $defaults;
 	}
-
 }
 
 ?>
