@@ -1,39 +1,39 @@
 <?php
-//set Anlalyzer Config!
 
 use li3_ids\extensions\Analyze;
+
 use lithium\analysis\Logger;
+use lithium\action\Dispatcher;
 
-use lithium\storage\Session;
-use lithium\storage\session\adapter\Php;
+define('LI3_IDS_PATH', dirname(dirname(__DIR__)));
+define('LI3_IDS_LIB_PATH', LI3_IDS_PATH . '/libraries/phpids/lib');
 
-Session::config(array(
-	'ids' => array('adapter' => new Php, 'filters' => array()),
-));
-//@todo build a threshhold-Level Logger-Level Mapper
 
+/**
+ * Configure how IDS should behave
+ */
 Analyze::config(array(
-	'default'=>array(
+	'default' => array(
 		'threshold' => array(
-			'log'      => 3,
-			'mail'     => 9,
-			'warn'     => 27,
-			'kick'     => 81,
-			),
-
-		'email' => array(
-			'address1@what.ever',
-			'address2@what.ever',
-			),
+			'log'  => 3,
+			'mail' => 9,
+			'warn' => 27,
+			'kick' => 81,
 		),
-	));
-
-Logger::config(array(
- 	'default' => array('adapter' => 'Syslog'),
- 	'ids' => array(
- 		'adapter' => 'File',
- 		'priority' => array('emergency', 'alert', 'critical', 'error','warning')
- 	)
+		'email' => array(
+			'admin@example.com',
+		),
+	),
 ));
+
+/**
+ * Apply filter to Dispatcher, so we can analyze the request
+ */
+Dispatcher::applyFilter('run', function($self, $params, $chain) {
+	// debug($params);exit;
+	Analyze::run($params['request']);
+	return $chain->next($self, $params, $chain);
+});
+
 
 ?>
