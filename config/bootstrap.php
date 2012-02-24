@@ -1,21 +1,28 @@
 <?php
+
 /**
+ * This file defines the Analyze configuration
  *
- **/
-
-use lithium\action\Dispatcher;
-use li3_ids\extensions\Analyze;
-
-//debug mode :)
-\ini_set("display_errors", 1);
-
-//configurations
+ * Please make sure, you configure your Analyzer correctly
+ */
 require __DIR__ . '/bootstrap/ids.php';
 
+/**
+ * This file defines our custom logging engine
+ *
+ * You can also do that in your applications
+ * logging settting, just make sure, Analyzer
+ * configuration reflects your decision.
+ */
+// require __DIR__ . '/bootstrap/logging.php';
 
-Dispatcher::applyFilter('run', function($self, $params, $chain) {
-	Analyze::run($params);
-	return $chain->next($self, $params, $chain);
-});
+/**
+ * This file could be used to activate a session
+ * but is not needed, if you already have one.
+ *
+ * Just make sure, you have a session name, that
+ * you configure the Analyzer in bootstrap/ids.php
+ */
+// require __DIR__ . '/bootstrap/session.php';
 
 ?>
