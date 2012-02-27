@@ -161,7 +161,7 @@ class Analyze extends \lithium\core\Adaptable {
 	protected static function _initConfig($name, $config) {
 		$defaults = array(
 			'adapter' => null,
-			'session' => 'default', // name of Session config to use
+			'session' => 'ids', // name of Session config to use
 			'logger' => 'ids', // name of Logger config to use
 			'log_format' => '{:ip} - Total impact "{:total_impact}" is raised by "{:impact}" and higher than threshold "{:threshold}"',
 			'threshold' => array(

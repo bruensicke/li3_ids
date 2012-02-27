@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This configures your session storage. 
+ * This configures your session storage.
  */
 use lithium\storage\Session;
 
