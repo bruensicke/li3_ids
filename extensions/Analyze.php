@@ -41,7 +41,7 @@ class Analyze extends \lithium\core\Adaptable {
 	 * @return boolean true on success, false otherwise
 	 */
 	public static function run($request){
-		if(!$request) {
+		if (!$request) {
 			return false;
 		}
 
@@ -68,7 +68,7 @@ class Analyze extends \lithium\core\Adaptable {
 			$ids = new \IDS_Monitor($data, $init);
 			$result = $ids->run();
 
-			if($result instanceof \IDS_Report){
+			if ($result instanceof \IDS_Report){
 				static::react($result);
 			}
 		} catch (Exception $e){
@@ -90,11 +90,11 @@ class Analyze extends \lithium\core\Adaptable {
 
 		$impact = Session::read('impact', array('name' => $config['session']));
 		$impact += $current_impact;
-		if(!Session::write('impact', (string)$impact, array('name' => $config['session']))){
+		if (!Session::write('impact', (string)$impact, array('name' => $config['session']))){
 			$msg = sprintf('Impact could not be written to Session "%s"', $config['session']);
 			throw new \Exception($msg);
 		}
-		switch(true) {
+		switch (true) {
 			case $impact >= $config['threshold']['kick']:
 				//IP to Blacklist
 				static::log($result, 'kick', $impact);
