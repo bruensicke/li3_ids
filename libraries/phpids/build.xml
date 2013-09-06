@@ -1,9 +1,6 @@
 <project name="PHPIDS" default="tests">
 	<target name="tests" unless="tests.disabled">
-        <exec executable="phpunit" failonerror="true">
-            <arg line="--verbose"/>
-            <arg line="tests/allTests.php"/>
-        </exec>
+        <exec executable="phpunit" failonerror="true"/>
     </target>
 
 	<target name="docs">
@@ -22,9 +19,10 @@
 	</target>
 
     <target name="revert">
-        <exec executable="svn">
-            <arg value="revert"/>
-            <arg value="${basedir}"/>
+        <exec executable="git">
+            <arg value="reset"/>
+            <arg value="--hard"/>
+            <arg value="HEAD"/>
         </exec>
     </target>
 
@@ -35,9 +33,9 @@
         description="Create release tarball and checksums. Use -Drelease.version=&lt;version&gt;"/>
 
     <target name="release.version" if="release.version">
-        <replace dir="lib/IDS" value="${release.version}">
-            <include name="**/*.php"/>
-            <replacetoken>@@phpIdsVersion@@</replacetoken>
+        <replace dir="lib/IDS" value="&quot;${release.version}&quot;">
+            <include name="Version.php"/>
+            <replacetoken>'master'</replacetoken>
         </replace>
     </target>
 
