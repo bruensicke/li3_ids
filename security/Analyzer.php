@@ -30,6 +30,14 @@ class Analyzer extends \lithium\core\Adaptable {
 	protected static $_request = NULL;
 
 	/**
+	 * Libraries::locate() compatible path to adapters for this class.
+	 *
+	 * @see lithium\core\Libraries::locate()
+	 * @var string Dot-delimited path.
+	 */
+	protected static $_adapters = 'adapter.security.ids';
+
+	/**
 	 * Runs the PHPIDS Analyzer
 	 *
 	 * @see lithium\action\Request
