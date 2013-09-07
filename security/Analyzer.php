@@ -29,6 +29,8 @@ class Analyzer extends \lithium\core\Adaptable {
 	 */
 	protected static $_request = NULL;
 
+	protected static $_configurations = array();
+
 	/**
 	 * Libraries::locate() compatible path to adapters for this class.
 	 *
@@ -183,6 +185,7 @@ class Analyzer extends \lithium\core\Adaptable {
 		$cachePath = Libraries::get(true, 'resources') . '/tmp/cache';
 		$defaults = array(
 			'adapter' => null,
+			'filters' => array(),
 			'session' => 'li3_ids', // name of session config to use
 			'logger' => 'default', // name of logger config to use
 			'log_format' => '{:ip} - Total impact "{:total_impact}" is raised by "{:impact}" and higher than threshold "{:threshold}"',
