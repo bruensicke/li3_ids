@@ -29,6 +29,11 @@ class Analyzer extends \lithium\core\Adaptable {
 	 */
 	protected static $_request = NULL;
 
+	/**
+	 * holds configuration per adapter
+	 *
+	 * @var array
+	 */
 	protected static $_configurations = array();
 
 	/**
