@@ -6,6 +6,7 @@ use lithium\core\Libraries;
 use lithium\storage\Session;
 use lithium\analysis\Logger;
 use lithium\util\String;
+use lithium\util\Set;
 
 use IDS\Init;
 use IDS\Report;
@@ -56,9 +57,13 @@ class Analyzer extends \lithium\core\Adaptable {
 		self::$_request = $request;
 		try {
 
-			$init = Init::init($config['iniFile']);
-			if (!empty($config['config'])) {
-				$init->setConfig($config['config'], true);
+			if (!empty($config['iniFile']) && file_exists($config['iniFile'])) {
+				$init = Init::init($config['iniFile']);
+				if (!empty($config['config'])) {
+					$init->setConfig($config['config'], true);
+				}
+			} else {
+				$init = new Init($config['config']);
 			}
 
 			$ids = new Monitor($init);
@@ -71,7 +76,7 @@ class Analyzer extends \lithium\core\Adaptable {
 		} catch (Exception $e){
 			die($e->getMessage());
 		}
-		return true;
+		return $report;
 	}
 
 	/**
@@ -82,7 +87,7 @@ class Analyzer extends \lithium\core\Adaptable {
 	 */
 	protected static function react(Report $report, array $config = array()) {
 		if (empty($config)) {
-			$config = self::config('default');
+			$config = static::config('default');
 		}
 		$params = compact('report', 'config');
 		return static::_filter(__FUNCTION__, $params, function($self, $params) {
@@ -99,26 +104,22 @@ class Analyzer extends \lithium\core\Adaptable {
 			}
 			switch (true) {
 				case $impact >= $config['threshold']['kick']:
-					$self::log($report, 'kick', $impact);
-					//die('Ihre IP wurde gesperrt!');
+					$self::kick($report, 'kick', $impact);
 					break;
 				case $impact >= $config['threshold']['warn']:
-					//warn
-					$self::log($report, 'warn', $impact);
+					$self::warn($report, 'warn', $impact);
 					break;
 				case $impact >= $config['threshold']['mail']:
-					//mail
-					$self::log($report, 'mail', $impact);
+					$self::mail($report, 'mail', $impact);
 					break;
 				case $impact >= $config['threshold']['log']:
-					//log this
 					$self::log($report, 'log', $impact);
 					break;
 				default:
 					//nothing
 					break;
 			}
-			return $impact;
+			return $report;
 		});
 	}
 
@@ -151,6 +152,63 @@ class Analyzer extends \lithium\core\Adaptable {
 	}
 
 	/**
+	 * Mail an Report - by default this method just calls log
+	 *
+	 * You have to filter or overwrite this method in your adapter to implement custom logic.
+	 *
+	 * @see li3_ids\security\Analyzer::log()
+	 * @param object $result IDS\Report
+	 * @param string $threshold
+	 * @param integer $totalImpact
+	 * @return boolean
+	 */
+	public static function mail(Report $report, $threshold, $total_impact) {
+		$request = self::$_request;
+		$params = compact('report', 'threshold', 'total_impact', 'request');
+		return static::_filter(__FUNCTION__, $params, function($self, $params) {
+			return $self::log($params['report'], $params['threshold'], $params['total_impact']);
+		});
+	}
+
+	/**
+	 * Warn user - by default this method just calls log
+	 *
+	 * You have to filter or overwrite this method in your adapter to implement custom logic.
+	 *
+	 * @see li3_ids\security\Analyzer::log()
+	 * @param object $result IDS\Report
+	 * @param string $threshold
+	 * @param integer $totalImpact
+	 * @return boolean
+	 */
+	public static function warn(Report $report, $threshold, $total_impact) {
+		$request = self::$_request;
+		$params = compact('report', 'threshold', 'total_impact', 'request');
+		return static::_filter(__FUNCTION__, $params, function($self, $params) {
+			return $self::log($params['report'], $params['threshold'], $params['total_impact']);
+		});
+	}
+
+	/**
+	 * Kick user - by default this method just calls log
+	 *
+	 * You have to filter or overwrite this method in your adapter to implement custom logic.
+	 *
+	 * @see li3_ids\security\Analyzer::log()
+	 * @param object $result IDS\Report
+	 * @param string $threshold
+	 * @param integer $totalImpact
+	 * @return boolean
+	 */
+	public static function kick(Report $report, $threshold, $total_impact) {
+		$request = self::$_request;
+		$params = compact('report', 'threshold', 'total_impact', 'request');
+		return static::_filter(__FUNCTION__, $params, function($self, $params) {
+			return $self::log($params['report'], $params['threshold'], $params['total_impact']);
+		});
+	}
+
+	/**
 	 * converts a lithium request object into an array, that can be used for IDS inspection
 	 *
 	 * @see lithium\action\Request
@@ -158,16 +216,17 @@ class Analyzer extends \lithium\core\Adaptable {
 	 * @return array an array containing all data to be inspected by PHP-IDS
 	 */
 	public static function convertRequest($request, array $options = array()) {
-		$defaults = array('GET' => true, 'POST' => true, 'COOKIE' => true);
+		$config = static::config('default');
+		$defaults = $config['request'];
 		$options += $defaults;
 		$result = array();
-		if ($options['GET']) {
+		if ($options['get']) {
 			$result['GET'] = $request->query;
 		}
-		if ($options['POST']) {
+		if ($options['post']) {
 			$result['POST'] = $request->data;
 		}
-		if ($options['COOKIE']) {
+		if ($options['cookie']) {
 			$result['COOKIE'] = $_COOKIE;
 		}
 		return $result;
@@ -204,20 +263,33 @@ class Analyzer extends \lithium\core\Adaptable {
 				'log'  => 'info',
 				'mail' => 'warning',
 				'warn' => 'warning',
-				'kick' => 'error',
+				'kick' => 'warning',
 			),
-			'iniFile' => LI3_IDS_PATH . '/config/bootstrap/ids.ini',
+			'request' => array(
+				'get' => true,
+				'post' => true,
+				'cookie' => true,
+			),
+			// 'iniFile' => LI3_IDS_PATH . '/config/bootstrap/ids.ini',
 			'config' => array(
 				'General' => array(
-					'filter_path' => LI3_IDS_LIB_PATH . '/default_filter.xml',
+					'filter_type' => 'xml',
+					'use_base_path' => false,
+					'scan_keys' => false,
 					'tmp_path' => $cachePath,
+					'filter_path' => LI3_IDS_LIB_PATH . '/default_filter.xml',
+					'html' => array(),
+					'json' => array(),
+					'exceptions' => array(),
 				),
 				'Caching' => array(
+					'caching' => 'file', // session|file|database|memcached|none
+					'expiration_time' => 600,
 					'path' => $cachePath . '/ids_filter.cache',
 				),
 			),
 		);
-		return (array) $config + $defaults;
+		return (array) Set::merge($defaults, $config);
 	}
 }
 
