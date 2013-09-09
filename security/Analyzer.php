@@ -52,8 +52,9 @@ class Analyzer extends \lithium\core\Adaptable {
 	 * @param object $request The lithium Request object
 	 * @return boolean true on success, false otherwise
 	 */
-	public static function run($request) {
-		$config = self::config('default');
+	public static function run($request, array $options = array()) {
+		$defaults = self::config('default');
+		$config = Set::merge($defaults, $options);
 		self::$_request = $request;
 		try {
 
