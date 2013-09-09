@@ -68,7 +68,7 @@ class Analyzer extends \lithium\core\Adaptable {
 			}
 
 			$ids = new Monitor($init);
-			$report = $ids->run(static::convertRequest($request));
+			$report = $ids->run(static::convertRequest($request, $config['request']));
 
 			if (!$report->isEmpty()) {
 				return static::react($report, $config);
@@ -105,16 +105,16 @@ class Analyzer extends \lithium\core\Adaptable {
 			}
 			switch (true) {
 				case $impact >= $config['threshold']['kick']:
-					$self::kick($report, 'kick', $impact);
+					$self::kick($report, $config['threshold']['kick'], $impact);
 					break;
 				case $impact >= $config['threshold']['warn']:
-					$self::warn($report, 'warn', $impact);
+					$self::warn($report, $config['threshold']['warn'], $impact);
 					break;
 				case $impact >= $config['threshold']['mail']:
-					$self::mail($report, 'mail', $impact);
+					$self::mail($report, $config['threshold']['mail'], $impact);
 					break;
 				case $impact >= $config['threshold']['log']:
-					$self::log($report, 'log', $impact);
+					$self::log($report, $config['threshold']['log'], $impact);
 					break;
 				default:
 					//nothing
@@ -127,16 +127,16 @@ class Analyzer extends \lithium\core\Adaptable {
 	/**
 	 * Logs an Report
 	 *
-	 * @param object $result IDS\Report
-	 * @param string $threshold
+	 * @param object $result Instance of type `IDS\Report` as result of `IDS\Monitor::run()`
+	 * @param integer $threshold
 	 * @param integer $totalImpact
 	 * @return boolean
 	 */
 	public static function log(Report $report, $threshold, $total_impact) {
-		$request = self::$_request;
-		$params = compact('report', 'threshold', 'total_impact', 'request');
+		$params = compact('report', 'threshold', 'total_impact');
 		return static::_filter(__FUNCTION__, $params, function($self, $params) {
 			extract($params);
+			$request = $self::getRequest();
 			$config = $self::config('default');
 			$name = $config['logger'];
 			if ($name === false) {
@@ -146,9 +146,9 @@ class Analyzer extends \lithium\core\Adaptable {
 				'ip' => $request->env('REMOTE_ADDR'),
 				'total_impact' => $total_impact,
 				'impact' => $report->getImpact(),
-				'threshold' => $config['threshold'][$threshold],
+				'threshold' => $threshold,
 			));
-			return Logger::write($config['severity'][$threshold], $msg, compact('name'));
+			return Logger::write($config['log_severity'], $msg, compact('name'));
 		});
 	}
 
@@ -158,14 +158,13 @@ class Analyzer extends \lithium\core\Adaptable {
 	 * You have to filter or overwrite this method in your adapter to implement custom logic.
 	 *
 	 * @see li3_ids\security\Analyzer::log()
-	 * @param object $result IDS\Report
-	 * @param string $threshold
+	 * @param object $result Instance of type `IDS\Report` as result of `IDS\Monitor::run()`
+	 * @param integer $threshold
 	 * @param integer $totalImpact
 	 * @return boolean
 	 */
 	public static function mail(Report $report, $threshold, $total_impact) {
-		$request = self::$_request;
-		$params = compact('report', 'threshold', 'total_impact', 'request');
+		$params = compact('report', 'threshold', 'total_impact');
 		return static::_filter(__FUNCTION__, $params, function($self, $params) {
 			return $self::log($params['report'], $params['threshold'], $params['total_impact']);
 		});
@@ -177,14 +176,13 @@ class Analyzer extends \lithium\core\Adaptable {
 	 * You have to filter or overwrite this method in your adapter to implement custom logic.
 	 *
 	 * @see li3_ids\security\Analyzer::log()
-	 * @param object $result IDS\Report
-	 * @param string $threshold
+	 * @param object $result Instance of type `IDS\Report` as result of `IDS\Monitor::run()`
+	 * @param integer $threshold
 	 * @param integer $totalImpact
 	 * @return boolean
 	 */
 	public static function warn(Report $report, $threshold, $total_impact) {
-		$request = self::$_request;
-		$params = compact('report', 'threshold', 'total_impact', 'request');
+		$params = compact('report', 'threshold', 'total_impact');
 		return static::_filter(__FUNCTION__, $params, function($self, $params) {
 			return $self::log($params['report'], $params['threshold'], $params['total_impact']);
 		});
@@ -196,17 +194,27 @@ class Analyzer extends \lithium\core\Adaptable {
 	 * You have to filter or overwrite this method in your adapter to implement custom logic.
 	 *
 	 * @see li3_ids\security\Analyzer::log()
-	 * @param object $result IDS\Report
-	 * @param string $threshold
+	 * @param object $result Instance of type `IDS\Report` as result of `IDS\Monitor::run()`
+	 * @param integer $threshold
 	 * @param integer $totalImpact
 	 * @return boolean
 	 */
 	public static function kick(Report $report, $threshold, $total_impact) {
-		$request = self::$_request;
-		$params = compact('report', 'threshold', 'total_impact', 'request');
+		$params = compact('report', 'threshold', 'total_impact');
 		return static::_filter(__FUNCTION__, $params, function($self, $params) {
 			return $self::log($params['report'], $params['threshold'], $params['total_impact']);
 		});
+	}
+
+	/**
+	 * returns lithium request object that has been used in `Analyzer::run()`
+	 *
+	 * @see li3_ids\security\Analyzer::run()
+	 * @see lithium\action\Request
+	 * @return object $request The lithium Request object
+	 */
+	public static function getRequest() {
+		return static::$_request;
 	}
 
 	/**
@@ -218,8 +226,7 @@ class Analyzer extends \lithium\core\Adaptable {
 	 */
 	public static function convertRequest($request, array $options = array()) {
 		$config = static::config('default');
-		$defaults = $config['request'];
-		$options += $defaults;
+		$options += $config['request'];
 		$result = array();
 		if ($options['get']) {
 			$result['GET'] = $request->query;
@@ -253,18 +260,13 @@ class Analyzer extends \lithium\core\Adaptable {
 			'filters' => array(),
 			'session' => 'li3_ids', // name of session config to use
 			'logger' => 'default', // name of logger config to use
+			'log_severity' => 'debug',
 			'log_format' => '{:ip} - Total impact "{:total_impact}" is raised by "{:impact}" and higher than threshold "{:threshold}"',
 			'threshold' => array(
 				'log'  => 3,
 				'mail' => 9,
 				'warn' => 27,
 				'kick' => 81,
-			),
-			'severity' => array(
-				'log'  => 'info',
-				'mail' => 'warning',
-				'warn' => 'warning',
-				'kick' => 'warning',
 			),
 			'request' => array(
 				'get' => true,
